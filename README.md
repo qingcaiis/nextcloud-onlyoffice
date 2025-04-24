@@ -154,7 +154,7 @@ kubectl -n nextcloud get pods,svc,pvc
 
 ```
 # 步骤1. 下载并解压OnlyOffice插件
-su -s /bin/sh www-data -c 'curl -O http://yum.yq.com/yumrepos/www/nextcloud/onlyoffice.tar.gz && tar -xvf onlyoffice.tar.gz -C apps/ \
+su -s /bin/sh www-data -c 'curl -O https://gitee.com/qingcaihub/nextcloud-onlyoffice/raw/master/onlyoffice.tar.gz && tar -xvf onlyoffice.tar.gz -C apps/ \
 
 # 步骤2. 生成信任域名临时文件
 ; php occ --no-warnings config:system:get trusted_domains >> trusted_domain.tmp \
