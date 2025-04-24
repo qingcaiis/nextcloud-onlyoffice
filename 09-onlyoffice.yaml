@@ -1,0 +1,127 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nextcloud-onlyoffice-logs
+  namespace: nextcloud
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs-csi
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nextcloud-onlyoffice-data
+  namespace: nextcloud
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs-csi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nextcloud-onlyoffice-fonts
+  namespace: nextcloud
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: nfs-csi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nextcloud-onlyoffice-forgotten
+  namespace: nextcloud
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: nfs-csi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: nextcloud-onlyoffice
+  name: nextcloud-onlyoffice
+  namespace: nextcloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nextcloud-onlyoffice
+  template:
+    metadata:
+      labels:
+        app: nextcloud-onlyoffice
+    spec:
+      containers:
+      - env:
+        - name: JWT_ENABLED
+          value: "true"
+        - name: JWT_SECRET
+          value: "secret"
+        name: nextcloud-onlyoffice
+        image: onlyoffice/documentserver:latest
+        # image: harbor.yq.com/library/onlyoffice-documentserver
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/log/onlyoffice
+          name: onlyoffice-logs
+        - mountPath: /var/www/onlyoffice/Data
+          name: onlyoffice-data
+        - mountPath: /usr/share/fonts/truetype/custom
+          name: onlyoffice-fonts
+        - mountPath: /var/lib/onlyoffice/documentserver/App_Data/cache/files/forgotten
+          name: onlyoffice-forgotten
+      restartPolicy: Always
+      volumes:
+        - name: onlyoffice-logs
+          persistentVolumeClaim:
+            claimName: nextcloud-onlyoffice-logs
+        - name: onlyoffice-data
+          persistentVolumeClaim:
+            claimName: nextcloud-onlyoffice-data
+        - name: onlyoffice-fonts
+          persistentVolumeClaim:
+            claimName: nextcloud-onlyoffice-fonts
+        - name: onlyoffice-forgotten
+          persistentVolumeClaim:
+            claimName: nextcloud-onlyoffice-forgotten
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nextcloud-onlyoffice
+  namespace: nextcloud
+spec:
+  #type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: 443
+      protocol: TCP
+  selector:
+    app: nextcloud-onlyoffice

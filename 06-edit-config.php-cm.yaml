@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: run-sh
+  namespace: nextcloud
+data:
+  run.sh: |
+    #sed -i "24s/^.*$/    1 => '*',/" config/config.php
+    su -s /bin/sh www-data -c 'curl -O https://gitee.com/qingcaihub/nextcloud-onlyoffice/raw/master/onlyoffice.tar.gz && tar -xvf onlyoffice.tar.gz -C apps/ \
+    ; php occ --no-warnings config:system:get trusted_domains >> trusted_domain.tmp  \
+    ; php occ --no-warnings app:enable onlyoffice \
+    ; php occ --no-warnings app:enable files_external \
+    ; php occ --no-warnings config:system:set onlyoffice DocumentServerUrl --value="/ds-vpath/" \
+    && php occ --no-warnings config:system:set onlyoffice DocumentServerInternalUrl --value="http://nextcloud-onlyoffice/" \
+    && php occ --no-warnings config:system:set onlyoffice StorageUrl --value="http://nextcloud-nginx/" \
+    && php occ --no-warnings config:system:set overwrite.cli.url --value="http://nextcloud.yq.com/" \
+    && php occ --no-warnings config:system:set onlyoffice jwt_secret --value="secret" \
+    && ! grep -q "nextcloud.yq.com" trusted_domain.tmp \
+    && TRUSTED_INDEX=$(cat trusted_domain.tmp | wc -l) \
+    && php occ --no-warnings config:system:set trusted_domains 0 --value="nextcloud.yq.com" \
+    && php occ --no-warnings config:system:set trusted_domains 1 --value="nextcloud-nginx" \
+    ; rm trusted_domain.tmp'
+    #&& php occ --no-warnings config:system:set trusted_domains $TRUSTED_INDEX --value="nextcloud.yq.com" \
+    #&& php occ --no-warnings config:system:set trusted_domains $(($TRUSTED_INDEX+1)) --value="nextcloud-nginx" \
+    #; rm trusted_domain.tmp'

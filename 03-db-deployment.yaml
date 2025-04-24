@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+#kind: Deployment
+kind: StatefulSet
+metadata:
+  labels:
+    app: nextcloud-db
+  name: nextcloud-db
+  namespace: nextcloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nextcloud-db
+  template:
+    metadata:
+      labels:
+        app: nextcloud-db
+    spec:
+      containers:
+      - env:
+        - name: MYSQL_DATABASE
+          value: nextcloud
+        - name: MYSQL_PASSWORD
+          value: someMySqlPassYQLXC
+        - name: MYSQL_USER
+          value: nextcloud
+        - name: MYSQL_ROOT_PASSWORD
+          value: someMySqlRootPassYQLXC
+        #image: mariadb
+        image: harbor.yq.com/library/mariadb
+        name: nextcloud-db
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: nextcloud-db
+      restartPolicy: Always
+      volumes:
+      - name: nextcloud-db
+        persistentVolumeClaim:
+          claimName: nextcloud-db

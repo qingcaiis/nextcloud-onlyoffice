@@ -1,0 +1,87 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nextcloud-nginx
+  name: nextcloud-nginx
+  namespace: nextcloud
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nextcloud-nginx
+  template:
+    metadata:
+      labels:
+        app: nextcloud-nginx
+    spec:
+      containers:
+      - name: nextcloud-nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        - containerPort: 443
+          protocol: TCP
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/www/html
+          name: nextcloud-data
+        - mountPath: /etc/nginx/nginx.conf
+          name: nginx-config
+          subPath: nginx.conf
+      restartPolicy: Always
+      volumes:
+        - name: nextcloud-data
+          persistentVolumeClaim:
+            claimName: nextcloud
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nextcloud-nginx
+  namespace: nextcloud
+spec:
+  #type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: 443
+      protocol: TCP
+  selector:
+    app: nextcloud-nginx
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nextcloud-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "200m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/affinity-mode: "persistent"
+  namespace: nextcloud
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: nextcloud.yq.com
+    http:
+      paths:
+      - path: /
+        pathType:  Prefix
+        backend:
+         service:
+           name: nextcloud-nginx
+           port:
+            number: 80

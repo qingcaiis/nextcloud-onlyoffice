@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+#kind: Deployment
+kind: StatefulSet
+metadata:
+  labels:
+    app: nextcloud-app
+  name: nextcloud-app
+  namespace: nextcloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nextcloud-app
+  template:
+    metadata:
+      labels:
+        app: nextcloud-app
+    spec:
+      containers:
+      - env:
+        - name: TZ
+          value: Europe/Berlin
+        - name: DEBUG
+          value: "false"
+        - name: NEXTCLOUD_URL
+          value: http://<someDomain>
+        - name: NEXTCLOUD_ADMIN_USER
+          value: admin
+        - name: NEXTCLOUD_ADMIN_PASSWORD
+          value: "123456"
+        - name: NEXTCLOUD_UPLOAD_MAX_FILESIZE
+          value: 4G
+        - name: NEXTCLOUD_MAX_FILE_UPLOADS
+          value: "20"
+          
+        - name: MYSQL_DATABASE
+          value: nextcloud
+        - name: MYSQL_HOST
+          value: nextcloud-db
+        - name: MYSQL_PASSWORD
+          value: "xxxxxxxxx"
+        - name: MYSQL_USER
+          value: nextcloud
+        name: nextcloud-app
+        #image: nextcloud:stable-fpm-alpine
+        image: nextcloud:28.0.11-fpm
+        #image: harbor.yq.com/library/nextcloud:28.0.11-fpm
+        #securityContext:
+        #  runAsUser: 82
+        #  runAsGroup: 82
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        - containerPort: 9000
+          protocol: TCP
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/www/html
+          name: html
+        - mountPath: /tmp/run.sh
+          name: run-sh
+          subPath: run.sh
+        - mountPath: /data
+          name: nfs-data
+      restartPolicy: Always
+      volumes:
+        - name: html
+          persistentVolumeClaim:
+            claimName: nextcloud
+        - name: run-sh
+          configMap:
+            name: run-sh
+        - name: nfs-data
+          emptyDir: {}
+          #nfs:
+          #  server: 192.168.2.12
+          #  path: /volume2/NAS-DS918
